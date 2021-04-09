@@ -1,0 +1,148 @@
+openapi: 3.0.2
+info:
+  title: 'API NEWS'
+  version: ''
+  description: |
+    API начинается с /api/v1/
+
+    # Описание
+    Проект **API NEWS** позволяет зарегистрированным пользователям с JWT-токеном просматривать список всех новостей.
+
+    # Алгоритм регистрации пользователей
+    
+    Пользователь отправляет запрос с параметрами `username` и `password` на `/auth/`, в ответе на запрос ему приходит `token` (JWT-токен).
+    Токен вернётся в поле access, а данные из поля refresh пригодятся для обновления токена.
+    
+   
+
+servers:
+  - url: /api/v1/
+
+
+paths:
+  
+  
+  /auth/:
+    post:
+      tags:
+        - AUTH
+      description: Получить JWT-токен
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  writeOnly: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWTToken'
+          description: ''
+        400:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /auth/refresh/:
+    post:
+      tags:
+        - AUTH
+      description: Обновить JWT-токен
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - refresh
+              properties:
+                refresh:
+                  type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                properties:
+                  refresh:
+                    type: string
+                required:
+                - refresh
+          description: ''
+
+
+  /news/:
+    get:
+      tags:
+        - NEWS
+      description: Получить список всех новостей
+      parameters: []
+      responses:
+        200:
+          description: Список новостей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/News'
+      security:
+      - jwt_auth:
+        - read:authorised user
+      
+
+
+components:
+  schemas:
+    ValidationError:
+      title: Ошибка валидации
+      type: object
+      properties:
+        field_name:
+          type: array
+          items:
+            type: string
+    JWTToken:
+      title: JWT Токен
+      type: object
+      properties:
+        access:
+          type: string
+          title: access токен
+        refresh:
+          type: string
+          title: refresh токен
+    
+    News:
+      title: Новости
+      type: object
+      properties:
+        pub_date:
+          type: string
+          format: date-time
+          title: Дата новости
+          readOnly: true
+        headline:
+          type: string
+          title: заголовок новости
+          readOnly: true
+        text:
+          type: string
+          title: текст новости
+          readOnly: true
+
+  securitySchemes:
+    jwt_auth:
+      type: apiKey
+      name: Bearer
+      in: header        
